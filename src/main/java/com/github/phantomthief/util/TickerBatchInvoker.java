@@ -16,19 +16,25 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import com.github.phantomthief.collection.BufferTrigger;
-import com.github.phantomthief.collection.impl.SimpleBufferTrigger;
+import com.github.phantomthief.BufferTrigger;
+import com.github.phantomthief.simple.SimpleBufferTrigger;
 import com.github.phantomthief.tuple.TwoTuple;
 
 /**
+ * 实际上这是一个用map做容器的使用示例
+ *
  * @author w.vela
  * Created on 16/5/21.
  */
 public class TickerBatchInvoker<K, V> implements Function<K, CompletableFuture<V>> {
 
-    private final ThrowableFunction<Collection<K>, Map<K, V>, ? extends Throwable> batchInvoker;
+    // 最终消费任务所用线程池
     private final Executor executor;
+    // buffer-trigger中持有多组pair，每组pair都是key和future
     private final BufferTrigger<TwoTuple<K, CompletableFuture<V>>> bufferTrigger;
+    // 具体的消费逻辑，一组key，触发后得到一组kv
+    private final ThrowableFunction<Collection<K>, Map<K, V>, ? extends Throwable> batchInvoker;
+
 
     private TickerBatchInvoker(long ticker,
             ThrowableFunction<Collection<K>, Map<K, V>, ? extends Throwable> batchInvoker,
@@ -52,6 +58,8 @@ public class TickerBatchInvoker<K, V> implements Function<K, CompletableFuture<V
             if (list == null) {
                 list = new ArrayList<>();
             }
+
+            // 其实buffer-trigger开启读写锁的话已经保证了同步
             synchronized (list) {
                 list.add(e.getSecond());
             }
@@ -85,6 +93,9 @@ public class TickerBatchInvoker<K, V> implements Function<K, CompletableFuture<V
         });
     }
 
+    /**
+     * 提交一个key，由于不知道什么时候才会被调用，因此返回一个future
+     */
     @Override
     public CompletableFuture<V> apply(K key) {
         CompletableFuture<V> future = new CompletableFuture<>();

@@ -1,4 +1,4 @@
-package com.github.phantomthief.collection.impl;
+package com.github.phantomthief.support;
 
 import static com.github.phantomthief.util.MoreReflection.getCallerPlace;
 
@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.simple.SimpleBufferTriggerBuilder;
 
 /**
  * @author w.vela
@@ -14,8 +14,11 @@ import com.github.phantomthief.collection.BufferTrigger;
  */
 public interface NameRegistry {
 
+    @Nullable
+    String name();
+
     /**
-     * 注意，当前还只支持 {@link BufferTrigger#simple()} 方式构建的命名获取
+     * 注意，当前还只支持 {@link com.github.phantomthief.MoreBufferTrigger#simple()} 方式构建的命名获取
      */
     static NameRegistry autoRegistry() {
         return () -> {
@@ -27,7 +30,4 @@ public interface NameRegistry {
             }
         };
     }
-
-    @Nullable
-    String name();
 }

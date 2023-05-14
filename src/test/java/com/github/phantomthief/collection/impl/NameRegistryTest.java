@@ -7,7 +7,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.BufferTrigger;
+import com.github.phantomthief.MoreBufferTrigger;
+import com.github.phantomthief.simple.SimpleBufferTrigger;
+import com.github.phantomthief.support.NameRegistry;
 
 /**
  * @author w.vela
@@ -25,7 +28,7 @@ class NameRegistryTest {
         });
     }
 
-    private BufferTrigger<String> buffer1 = BufferTrigger.<String, AtomicLong> simple()
+    private BufferTrigger<String> buffer1 = MoreBufferTrigger.<String, AtomicLong> simple()
             .setContainer(AtomicLong::new, (counter, _2) -> {
                 counter.incrementAndGet();
                 return true;
@@ -35,9 +38,9 @@ class NameRegistryTest {
 
     @Test
     void test() {
-        assertEquals("NameRegistryTest.java:34", NAME[0]); // 是 buffer1 声明的行数
+        assertEquals("NameRegistryTest.java:37", NAME[0]); // 是 buffer1 声明的行数
 
-        BufferTrigger<String> buffer2 = BufferTrigger.simpleTrigger()
+        BufferTrigger<String> buffer2 = MoreBufferTrigger.simpleTrigger()
                 .setContainer(AtomicLong::new, (counter, _2) -> {
                     counter.incrementAndGet();
                     return true;

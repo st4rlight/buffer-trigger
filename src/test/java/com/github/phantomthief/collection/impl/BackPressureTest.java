@@ -20,7 +20,10 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.MoreBufferTrigger;
+import com.github.phantomthief.BufferTrigger;
+import com.github.phantomthief.backpressure.GlobalBackPressureListener;
+import com.github.phantomthief.simple.SimpleBufferTrigger;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 /**
@@ -35,7 +38,7 @@ class BackPressureTest {
     void test() {
         List<String> consumed = new ArrayList<>();
         List<String> backPressured = Collections.synchronizedList(new ArrayList<>());
-        BufferTrigger<String> buffer = BufferTrigger.<String, List<String>> simple()
+        BufferTrigger<String> buffer = MoreBufferTrigger.<String, List<String>> simple()
                 .enableBackPressure(backPressured::add)
                 .maxBufferCount(10)
                 .interval(1, SECONDS)
@@ -67,7 +70,7 @@ class BackPressureTest {
     @Test
     void testNoBlock() {
         List<String> consumed = new ArrayList<>();
-        BufferTrigger<String> buffer = BufferTrigger.<String, List<String>> simple()
+        BufferTrigger<String> buffer = MoreBufferTrigger.<String, List<String>> simple()
                 .maxBufferCount(10)
                 .interval(1, SECONDS)
                 .setContainer(() -> synchronizedList(new ArrayList<>()), List::add)
@@ -111,7 +114,7 @@ class BackPressureTest {
         List<String> consumed = new ArrayList<>();
         List<String> backPressured = Collections.synchronizedList(new ArrayList<>());
         String name = "test-1";
-        BufferTrigger<String> buffer = BufferTrigger.<String, List<String>> simple()
+        BufferTrigger<String> buffer = MoreBufferTrigger.<String, List<String>> simple()
                 .maxBufferCount(10)
                 .enableBackPressure(backPressured::add)
                 .interval(1, SECONDS)

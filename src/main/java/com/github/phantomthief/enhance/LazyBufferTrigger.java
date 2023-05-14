@@ -1,20 +1,21 @@
-package com.github.phantomthief.collection.impl;
+package com.github.phantomthief.enhance;
 
 import static com.github.phantomthief.util.MoreSuppliers.lazy;
 
 import java.util.function.Supplier;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.BufferTrigger;
 import com.github.phantomthief.util.MoreSuppliers.CloseableSupplier;
 
 /**
+ * 并非提供BufferTrigger的实现，而是对其的一个lazy封装
  * @author w.vela
  */
 public class LazyBufferTrigger<E> implements BufferTrigger<E> {
 
     private final CloseableSupplier<BufferTrigger<E>> factory;
 
-    LazyBufferTrigger(Supplier<BufferTrigger<E>> factory) {
+    public LazyBufferTrigger(Supplier<BufferTrigger<E>> factory) {
         this.factory = lazy(factory);
     }
 

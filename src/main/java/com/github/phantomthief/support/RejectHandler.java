@@ -1,4 +1,4 @@
-package com.github.phantomthief.collection.impl;
+package com.github.phantomthief.support;
 
 import java.util.concurrent.locks.Condition;
 
@@ -8,7 +8,7 @@ import javax.annotation.Nullable;
  * @author w.vela
  * Created on 2019-07-30.
  */
-interface RejectHandler<T> {
+public interface RejectHandler<T> {
 
     /**
      * execute on caller thread

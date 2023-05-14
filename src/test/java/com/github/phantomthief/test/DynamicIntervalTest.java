@@ -10,7 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.MoreBufferTrigger;
+import com.github.phantomthief.BufferTrigger;
 
 /**
  * @author w.vela
@@ -23,7 +24,7 @@ class DynamicIntervalTest {
     void test() {
         int[] interval = {2};
         AtomicInteger counter = new AtomicInteger();
-        BufferTrigger<String> buffer = BufferTrigger.<String, Integer> simple()
+        BufferTrigger<String> buffer = MoreBufferTrigger.<String, Integer> simple()
                 .setContainer(() -> 0, (_1, _2) -> true)
                 .consumer(it -> {
                     logger.info("before consumer:{}", counter);

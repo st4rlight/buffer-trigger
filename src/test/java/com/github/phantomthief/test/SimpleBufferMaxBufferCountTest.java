@@ -6,7 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.MoreBufferTrigger;
+import com.github.phantomthief.BufferTrigger;
 
 /**
  * @author w.vela
@@ -19,7 +20,7 @@ class SimpleBufferMaxBufferCountTest {
         long[] maxSize = {100};
         long[] sleep = {100000};
         long[] rejected = {0};
-        BufferTrigger<String> trigger = BufferTrigger.<String, int[]> simple()
+        BufferTrigger<String> trigger = MoreBufferTrigger.<String, int[]> simple()
                 .setContainer(() -> new int[] {0}, (it, e) -> {
                     it[0]++;
                     return true;

@@ -1,40 +1,21 @@
-package com.github.phantomthief.collection;
+package com.github.phantomthief;
 
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.github.phantomthief.collection.impl.BatchConsumeBlockingQueueTrigger;
 import com.github.phantomthief.collection.impl.BatchConsumerTriggerBuilder;
 import com.github.phantomthief.collection.impl.GenericBatchConsumerTriggerBuilder;
-import com.github.phantomthief.collection.impl.GenericSimpleBufferTriggerBuilder;
-import com.github.phantomthief.collection.impl.SimpleBufferTrigger;
-import com.github.phantomthief.collection.impl.SimpleBufferTriggerBuilder;
+import com.github.phantomthief.simple.GenericSimpleBufferTriggerBuilder;
+import com.github.phantomthief.simple.SimpleBufferTrigger;
+import com.github.phantomthief.simple.SimpleBufferTriggerBuilder;
 
 /**
- * 一个支持自定义消费策略的本地缓存.
- * <p>用于本地缓存指定条目数据集，定时进行批处理或聚合计算；可用于埋点聚合计算，点赞计数等不追求强一致的业务场景.
- * <p>大多数场景推荐调用{@link #simple()}来构造{@link BufferTrigger}.
+ * BufferTrigger伴生类
  *
- * @author w.vela
+ * @author st4rlight <st4rlight@163.com>
+ * Created on 2023-05-14
  */
-public interface BufferTrigger<E> extends AutoCloseable {
-
-    /**
-     * 将需要定时处理的元素推入缓存.
-     *
-     * @throws IllegalStateException 当实例被关闭时，调用该方法可能会引起该异常.
-     */
-    void enqueue(E element);
-
-    /**
-     * 手动触发一次缓存消费.
-     * <p>一般处于缓存关闭方法{@link #close()}实现中.
-     */
-    void manuallyDoTrigger();
-
-    /**
-     * 获取当前缓存中未消费元素个数.
-     */
-    long getPendingChanges();
+public interface MoreBufferTrigger {
 
     /**
      * 快捷创建{@link GenericSimpleBufferTriggerBuilder}建造器，用于构造{@link SimpleBufferTrigger}实例.
@@ -48,7 +29,7 @@ public interface BufferTrigger<E> extends AutoCloseable {
      * @return {@link GenericSimpleBufferTriggerBuilder} 实例
      */
     static <E, C> GenericSimpleBufferTriggerBuilder<E, C> simple() {
-        return new GenericSimpleBufferTriggerBuilder<>(SimpleBufferTrigger.newBuilder());
+        return new GenericSimpleBufferTriggerBuilder<>(new SimpleBufferTriggerBuilder<>());
     }
 
     /**
@@ -79,12 +60,4 @@ public interface BufferTrigger<E> extends AutoCloseable {
     static BatchConsumerTriggerBuilder<Object> batchBlockingTrigger() {
         return BatchConsumeBlockingQueueTrigger.newBuilder();
     }
-
-    /**
-     * 停止该实例，释放所持有资源.
-     * <p>
-     * 请注意自动关闭特性仅在处于{@code try}-with-resources时才会生效，其它场景请在服务停止的回调方法中显式调用该方法.
-     */
-    @Override
-    void close(); // override to remove throws Exception.
 }

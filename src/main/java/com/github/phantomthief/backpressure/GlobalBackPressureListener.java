@@ -1,4 +1,4 @@
-package com.github.phantomthief.collection.impl;
+package com.github.phantomthief.backpressure;
 
 import javax.annotation.Nullable;
 
@@ -8,7 +8,16 @@ import javax.annotation.Nullable;
  */
 public interface GlobalBackPressureListener {
 
+    /**
+     * @param name 业务名
+     * @param element 当前元素
+     */
     void onHandle(@Nullable String name, Object element);
 
+    /**
+     * @param name 业务名
+     * @param element 当前元素
+     * @param blockInNano 本次背压阻塞时间
+     */
     void postHandle(@Nullable String name, Object element, long blockInNano);
 }

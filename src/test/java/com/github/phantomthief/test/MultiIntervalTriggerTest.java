@@ -10,9 +10,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
-import com.github.phantomthief.collection.BufferTrigger;
-import com.github.phantomthief.collection.impl.MultiIntervalTriggerStrategy;
-import com.github.phantomthief.collection.impl.SimpleBufferTrigger;
+import com.github.phantomthief.BufferTrigger;
+import com.github.phantomthief.strategy.MultiIntervalTriggerStrategy;
+import com.github.phantomthief.simple.SimpleBufferTrigger;
 import com.google.common.collect.Interner;
 
 /**

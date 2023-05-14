@@ -1,16 +1,15 @@
-package com.github.phantomthief.collection.impl;
+package com.github.phantomthief.simple;
 
-import static com.github.phantomthief.collection.impl.SimpleBufferTrigger.TriggerResult.empty;
-import static com.github.phantomthief.collection.impl.SimpleBufferTrigger.TriggerResult.trig;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.newSetFromMap;
-import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
@@ -21,40 +20,60 @@ import java.util.function.ToIntBiFunction;
 
 import javax.annotation.Nonnull;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.github.phantomthief.collection.BufferTrigger;
-import com.github.phantomthief.collection.impl.SimpleBufferTrigger.TriggerStrategy;
+import com.github.phantomthief.BufferTrigger;
+import com.github.phantomthief.backpressure.BackPressureHandler;
+import com.github.phantomthief.backpressure.BackPressureListener;
+import com.github.phantomthief.enhance.LazyBufferTrigger;
+import com.github.phantomthief.strategy.MultiIntervalTriggerStrategy;
+import com.github.phantomthief.strategy.TriggerResult;
+import com.github.phantomthief.strategy.TriggerStrategy;
+import com.github.phantomthief.support.NameRegistry;
+import com.github.phantomthief.support.RejectHandler;
 import com.github.phantomthief.util.ThrowableConsumer;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
- * {@link SimpleBufferTrigger}构造器，目前已不推荐直接使用，请调用{@link BufferTrigger#simple()}生成构造器.
+ * {@link SimpleBufferTrigger}构造器，目前已不推荐直接使用，请调用{@link com.github.phantomthief.MoreBufferTrigger#simple()}生成构造器.
  * <p>
  * 用于标准化{@link SimpleBufferTrigger}实例生成及配置，提供部分机制的默认实现
  * @param <E> 缓存元素类型，标明{@link  SimpleBufferTrigger#enqueue(Object)}传入元素的类型
  * @param <C> 缓存容器类型
  */
+@Slf4j
 @SuppressWarnings("unchecked")
 public class SimpleBufferTriggerBuilder<E, C> {
 
-    private static final Logger logger = LoggerFactory.getLogger(SimpleBufferTriggerBuilder.class);
     private static NameRegistry globalNameRegistry;
+    // 业务名称（仅当使用内部实现线程池时生效，用于线程名字中）
+    String bizName;
+    // 是否关闭读写锁，默认不关，关了可能丢数据
+    boolean disableSwitchLock;
 
+    // 触发策略
+    TriggerStrategy triggerStrategy;
+    // 定时任务线程池（若使用自定义线程池要注意调用close方法后手动shutdown和awaitTermination）
+    // 默认实现是一个单个线程的线程池，且是daemon线程
+    ScheduledExecutorService scheduledExecutorService;
+    // 标识是否使用了默认内部实现线程池
+    boolean usingInnerExecutor;
+
+    // 提供容器的工厂（需要考虑enqueue时的并发问题，因此建议使用线程安全的容器）
+    Supplier<C> bufferFactory;
+    // 入队方法，需要返回本次新增成功个数
+    ToIntBiFunction<C, E> queueAdder;
+    // 入队拒绝策略
+    RejectHandler<E> rejectHandler;
+    // 最大容量限制
+    LongSupplier maxBufferCount = () -> -1;
     private boolean maxBufferCountWasSet = false;
 
-    TriggerStrategy triggerStrategy;
-    ScheduledExecutorService scheduledExecutorService;
-    boolean usingInnerExecutor;
-    Supplier<C> bufferFactory;
-    ToIntBiFunction<C, E> queueAdder;
+    // 具体的消费函数（需要避免长时间无法消费完成）
     ThrowableConsumer<C, Throwable> consumer;
+    // 消费异常触发方法
     BiConsumer<Throwable, C> exceptionHandler;
-    LongSupplier maxBufferCount = () -> -1;
-    RejectHandler<E> rejectHandler;
-    String name;
-    boolean disableSwitchLock;
+
 
     /**
      * 设置缓存提供器及缓存存入函数；<b>注意：</b> 请使用者必须考虑线程安全问题.
@@ -114,8 +133,8 @@ public class SimpleBufferTriggerBuilder<E, C> {
      * 如使用自定义线程池，在调用{@link BufferTrigger#close()}方法后需要手动调用{@link ScheduledExecutorService#shutdown()}
      * 以及{@link ScheduledExecutorService#awaitTermination(long, TimeUnit)}方法来保证线程池平滑停止.
      */
-    public SimpleBufferTriggerBuilder<E, C>
-            setScheduleExecutorService(ScheduledExecutorService scheduledExecutorService) {
+    public SimpleBufferTriggerBuilder<E, C> setScheduleExecutorService(
+            ScheduledExecutorService scheduledExecutorService) {
         this.scheduledExecutorService = scheduledExecutorService;
         return this;
     }
@@ -158,13 +177,13 @@ public class SimpleBufferTriggerBuilder<E, C> {
      */
     @Deprecated
     public SimpleBufferTriggerBuilder<E, C> on(long interval, TimeUnit unit, long count) {
-        if (triggerStrategy == null) {
-            triggerStrategy = new MultiIntervalTriggerStrategy();
+        if (this.triggerStrategy == null) {
+            this.triggerStrategy = new MultiIntervalTriggerStrategy();
         }
-        if (triggerStrategy instanceof MultiIntervalTriggerStrategy) {
-            ((MultiIntervalTriggerStrategy) triggerStrategy).on(interval, unit, count);
+        if (this.triggerStrategy instanceof MultiIntervalTriggerStrategy) {
+            ((MultiIntervalTriggerStrategy) this.triggerStrategy).on(interval, unit, count);
         } else {
-            logger.warn(
+            log.warn(
                     "exists non multi interval trigger strategy found. ignore setting:{},{}->{}",
                     interval, unit, count);
         }
@@ -179,7 +198,7 @@ public class SimpleBufferTriggerBuilder<E, C> {
      * @param unit 间隔时间单位
      */
     public SimpleBufferTriggerBuilder<E, C> interval(long interval, TimeUnit unit) {
-        return interval(() -> interval, unit);
+        return this.interval(() -> interval, unit);
     }
 
     /**
@@ -194,7 +213,8 @@ public class SimpleBufferTriggerBuilder<E, C> {
     public SimpleBufferTriggerBuilder<E, C> interval(LongSupplier interval, TimeUnit unit) {
         this.triggerStrategy = (last, change) -> {
             long intervalInMs = unit.toMillis(interval.getAsLong());
-            return trig(change > 0 && currentTimeMillis() - last >= intervalInMs, intervalInMs);
+            // 默认实现只要在超过时间，且容器里有东西，就触发
+            return TriggerResult.of(change > 0 && currentTimeMillis() - last >= intervalInMs, intervalInMs);
         };
         return this;
     }
@@ -260,6 +280,20 @@ public class SimpleBufferTriggerBuilder<E, C> {
     }
 
     /**
+     * it's better dealing this in container
+     * NOTE: 若使用背压则无法设置拒绝策略
+     */
+    private <E1, C1> SimpleBufferTriggerBuilder<E1, C1> rejectHandlerEx(RejectHandler<? super E1> rejectHandler) {
+        checkNotNull(rejectHandler);
+        if (this.rejectHandler instanceof BackPressureHandler) {
+            throw new IllegalStateException("cannot set reject handler while enable back-pressure.");
+        }
+        SimpleBufferTriggerBuilder<E1, C1> thisBuilder = (SimpleBufferTriggerBuilder<E1, C1>) this;
+        thisBuilder.rejectHandler = (RejectHandler<E1>) rejectHandler;
+        return thisBuilder;
+    }
+
+    /**
      * 开启背压(back-pressure)能力，无处理回调.
      * <p>
      * <b>注意，当开启背压时，需要配合 {@link #maxBufferCount(long)}
@@ -282,6 +316,8 @@ public class SimpleBufferTriggerBuilder<E, C> {
      * 由于enqueue大多处于处理请求线程池中，如开启背压，大概率会造成请求线程池耗尽，此类场景建议直接丢弃入队元素或转发至Kafka.
      */
     public <E1, C1> SimpleBufferTriggerBuilder<E1, C1> enableBackPressure(BackPressureListener<E1> listener) {
+        // 背压是通过拒绝回调实现的，当前只支持一个拒绝策略
+        // 因此不允许有自定义的拒绝策略
         if (this.rejectHandler != null) {
             throw new IllegalStateException("cannot enable back-pressure while reject handler was set.");
         }
@@ -291,25 +327,12 @@ public class SimpleBufferTriggerBuilder<E, C> {
     }
 
     /**
-     * it's better dealing this in container
-     */
-    private <E1, C1> SimpleBufferTriggerBuilder<E1, C1> rejectHandlerEx(RejectHandler<? super E1> rejectHandler) {
-        checkNotNull(rejectHandler);
-        if (this.rejectHandler instanceof BackPressureHandler) {
-            throw new IllegalStateException("cannot set reject handler while enable back-pressure.");
-        }
-        SimpleBufferTriggerBuilder<E1, C1> thisBuilder = (SimpleBufferTriggerBuilder<E1, C1>) this;
-        thisBuilder.rejectHandler = (RejectHandler<E1>) rejectHandler;
-        return thisBuilder;
-    }
-
-    /**
      * 设置计划任务线程名称.
      * <p>
      * 仅当使用默认计划任务线程池时生效，线程最终名称为pool-simple-buffer-trigger-thread-[name].
      */
     public SimpleBufferTriggerBuilder<E, C> name(String name) {
-        this.name = name;
+        this.bizName = name;
         return this;
     }
 
@@ -317,18 +340,29 @@ public class SimpleBufferTriggerBuilder<E, C> {
      * 生成实例
      */
     public <E1> BufferTrigger<E1> build() {
+        // 背压校验
         check();
-        if (globalNameRegistry != null && name == null) {
-            name = globalNameRegistry.name();
+
+        // 获取到build函数被调用的位置
+        if (globalNameRegistry != null && bizName == null) {
+            bizName = globalNameRegistry.name();
         }
         return new LazyBufferTrigger<>(() -> {
+            // ensure主要是提供一些默认参数实现
             ensure();
+            // supplier实现
             SimpleBufferTriggerBuilder<E1, C> builder =
                     (SimpleBufferTriggerBuilder<E1, C>) SimpleBufferTriggerBuilder.this;
             return new SimpleBufferTrigger<>(builder);
         });
     }
 
+    /**
+     * 目前主要是开启背压时
+     * 1. 不能禁用读写锁
+     * 2. 必须设置最大buffer容量
+     * 3. 不能设置拒绝策略
+     */
     private void check() {
         checkNotNull(consumer);
         if (rejectHandler instanceof BackPressureHandler) {
@@ -342,34 +376,43 @@ public class SimpleBufferTriggerBuilder<E, C> {
     }
 
     private void ensure() {
-        if (triggerStrategy == null) {
-            logger.warn("no trigger strategy found. using NO-OP trigger");
-            triggerStrategy = (t, n) -> empty();
+        if (this.triggerStrategy == null) {
+            log.warn("no trigger strategy found. using NO-OP trigger");
+            this.triggerStrategy = (t, n) -> TriggerResult.empty();
         }
 
-        if (bufferFactory == null && queueAdder == null) {
-            logger.warn("no container found. use default thread-safe HashSet as container.");
-            bufferFactory = () -> (C) newSetFromMap(new ConcurrentHashMap<>());
-            queueAdder = (c, e) -> ((Set<E>) c).add(e) ? 1 : 0;
+        if (this.bufferFactory == null && this.queueAdder == null) {
+            log.warn("no container found. use default thread-safe HashSet as container.");
+            this.bufferFactory = () -> (C) newSetFromMap(new ConcurrentHashMap<>());
+            this.queueAdder = (c, e) -> ((Set<E>) c).add(e) ? 1 : 0;
         }
-        if (scheduledExecutorService == null) {
-            scheduledExecutorService = makeScheduleExecutor();
-            usingInnerExecutor = true;
+        if (this.scheduledExecutorService == null) {
+            this.scheduledExecutorService = this.makeScheduleExecutor();
+            this.usingInnerExecutor = true;
         }
-        if (name != null && rejectHandler instanceof BackPressureHandler) {
-            ((BackPressureHandler<E>) rejectHandler).setName(name);
+        if (this.bizName != null && rejectHandler instanceof BackPressureHandler) {
+            // 给背压处理器设置bizName，主要被用于背压钩子函数中
+            ((BackPressureHandler<E>) rejectHandler).setName(bizName);
         }
     }
 
     private ScheduledExecutorService makeScheduleExecutor() {
-        String threadPattern = name == null ? "pool-simple-buffer-trigger-thread-%d" : "pool-simple-buffer-trigger-thread-["
-                + name + "]";
-        return newSingleThreadScheduledExecutor(
-                new ThreadFactoryBuilder().setNameFormat(threadPattern)
-                        .setDaemon(true)
-                        .build());
+        String threadPattern = bizName == null
+               ? "pool-simple-buffer-trigger-thread-%d"
+               : "pool-simple-buffer-trigger-thread-[" + bizName + "]";
+
+        // 默认只有单个线程
+        ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                .setNameFormat(threadPattern)
+                .setDaemon(true)
+                .build();
+        return Executors.newSingleThreadScheduledExecutor(threadFactory);
     }
 
+    /**
+     * 目前名称主要是用于获取buffer-trigger被声明的位置
+     * NOTE: 通过simple()获取builder后build，在build函数中会对全局命名注册进行name调用
+     */
     static void setupGlobalNameRegistry(NameRegistry registry) {
         globalNameRegistry = registry;
     }

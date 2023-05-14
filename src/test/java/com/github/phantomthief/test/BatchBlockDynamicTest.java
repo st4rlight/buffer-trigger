@@ -10,7 +10,8 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.MoreBufferTrigger;
+import com.github.phantomthief.BufferTrigger;
 
 /**
  * @author w.vela
@@ -22,7 +23,7 @@ class BatchBlockDynamicTest {
     void test() {
         Duration[] linger = {ofSeconds(1)};
         int[] consumed = {0};
-        BufferTrigger<String> buffer = BufferTrigger.<String> batchBlocking()
+        BufferTrigger<String> buffer = MoreBufferTrigger.<String> batchBlocking()
                 .batchSize(100)
                 .linger(() -> linger[0])
                 .setConsumerEx(it -> consumed[0]++)

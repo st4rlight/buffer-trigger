@@ -14,7 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.MoreBufferTrigger;
+import com.github.phantomthief.BufferTrigger;
 
 /**
  * @author w.vela
@@ -26,7 +27,7 @@ class MultiThreadQueueTriggerTest {
 
     @Test
     void test() {
-        BufferTrigger<String> buffer = BufferTrigger.batchBlockingTrigger()
+        BufferTrigger<String> buffer = MoreBufferTrigger.batchBlockingTrigger()
                 .batchSize(3)
                 .setConsumerEx(this::delay)
                 .build();
@@ -50,7 +51,7 @@ class MultiThreadQueueTriggerTest {
 
     @Test
     void test2() {
-        BufferTrigger<String> buffer = BufferTrigger.<String> batchBlocking()
+        BufferTrigger<String> buffer = MoreBufferTrigger.<String> batchBlocking()
                 .batchSize(3)
                 .setConsumerEx(this::delay)
                 .linger(10, MILLISECONDS)
@@ -76,7 +77,7 @@ class MultiThreadQueueTriggerTest {
 
     @Test
     void test3() {
-        BufferTrigger<String> buffer = BufferTrigger.<String> batchBlocking()
+        BufferTrigger<String> buffer = MoreBufferTrigger.<String> batchBlocking()
                 .batchSize(3)
                 .setConsumerEx(this::delay)
                 .bufferSize(10)

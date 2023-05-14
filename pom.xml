@@ -113,6 +113,17 @@
             <version>${logback-classic.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.26</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>cn.st4rlight</groupId>
+            <artifactId>st4rlight-util</artifactId>
+            <version>1.1.0</version>
+        </dependency>
     </dependencies>
 
     <build>

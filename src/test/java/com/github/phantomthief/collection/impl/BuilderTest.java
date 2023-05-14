@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.MoreBufferTrigger;
 
 /**
  * @author w.vela
@@ -15,28 +15,28 @@ class BuilderTest {
     @Test
     void testBuilder() {
         assertThrows(NullPointerException.class, () ->
-                BufferTrigger.simple()
+                MoreBufferTrigger.simple()
                         .build());
         assertThrows(IllegalStateException.class, () ->
-                BufferTrigger.simple()
+                MoreBufferTrigger.simple()
                         .consumer(it -> {})
                         .enableBackPressure()
                         .disableSwitchLock()
                         .build());
         assertThrows(IllegalStateException.class, () ->
-                BufferTrigger.simple()
+                MoreBufferTrigger.simple()
                         .consumer(it -> {})
                         .enableBackPressure()
                         .rejectHandler(it -> {})
                         .build());
         assertThrows(IllegalStateException.class, () ->
-                BufferTrigger.simple()
+                MoreBufferTrigger.simple()
                         .consumer(it -> {})
                         .rejectHandler(it -> {})
                         .enableBackPressure()
                         .build());
         assertThrows(IllegalStateException.class, () ->
-                BufferTrigger.simple()
+                MoreBufferTrigger.simple()
                         .consumer(it -> {})
                         .enableBackPressure()
                         .build());

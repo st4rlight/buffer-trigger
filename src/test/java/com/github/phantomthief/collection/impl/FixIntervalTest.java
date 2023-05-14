@@ -12,7 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.MoreBufferTrigger;
+import com.github.phantomthief.BufferTrigger;
 
 /**
  * @author w.vela
@@ -28,7 +29,7 @@ class FixIntervalTest {
     @Test
     void testDelayMode() {
         logger.info("start.");
-        BufferTrigger<String> trigger = BufferTrigger.simpleTrigger()
+        BufferTrigger<String> trigger = MoreBufferTrigger.simpleTrigger()
                 .interval(INTERVAL, SECONDS)
                 .setContainer(HashSet::new, Set::add)
                 .consumer(this::consumerDelay)
@@ -52,7 +53,7 @@ class FixIntervalTest {
     @Test
     void testFixedRateMode() {
         logger.info("start.");
-        BufferTrigger<String> trigger = BufferTrigger.<String, Set<String>> simple()
+        BufferTrigger<String> trigger = MoreBufferTrigger.<String, Set<String>> simple()
                 .intervalAtFixedRate(INTERVAL, SECONDS)
                 .setContainer(HashSet::new, Set::add)
                 .consumer(this::consumerFixed)

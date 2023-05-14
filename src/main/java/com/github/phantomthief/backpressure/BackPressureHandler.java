@@ -1,4 +1,4 @@
-package com.github.phantomthief.collection.impl;
+package com.github.phantomthief.backpressure;
 
 import static java.lang.System.nanoTime;
 
@@ -6,62 +6,73 @@ import java.util.concurrent.locks.Condition;
 
 import javax.annotation.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.github.phantomthief.support.RejectHandler;
+
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author w.vela
  * Created on 2019-07-30.
  */
-class BackPressureHandler<T> implements RejectHandler<T> {
+@Slf4j
 
-    private static final Logger logger = LoggerFactory.getLogger(BackPressureHandler.class);
 
-    private static GlobalBackPressureListener globalBackPressureListener = null;
+public class BackPressureHandler<T> implements RejectHandler<T> {
 
+    @Setter
+    private String name;
     @Nullable
     private final BackPressureListener<T> listener;
-    private String name;
 
-    BackPressureHandler(BackPressureListener<T> listener) {
+    public BackPressureHandler(@Nullable BackPressureListener<T> listener) {
         this.listener = listener;
     }
 
-    void setName(String name) {
-        this.name = name;
+
+    private static GlobalBackPressureListener globalBackPressureListener = null;
+
+    public static void setupGlobalBackPressureListener(GlobalBackPressureListener listener) {
+        globalBackPressureListener = listener;
     }
+
+
 
     @Override
     public boolean onReject(T element, @Nullable Condition condition) {
+        // 自定义背压钩子
         if (listener != null) {
             try {
                 listener.onHandle(element);
             } catch (Throwable e) {
-                logger.error("", e);
+                log.error("", e);
             }
         }
+
+        // 全局背压钩子
         if (globalBackPressureListener != null) {
             try {
                 globalBackPressureListener.onHandle(name, element);
             } catch (Throwable e) {
-                logger.error("", e);
+                log.error("", e);
             }
         }
+
         assert condition != null;
         long startNano = nanoTime();
+        // 当前数据队列被处理后会signal，这里会阻塞新数据的插入
         condition.awaitUninterruptibly();
         long blockInNano = nanoTime() - startNano;
+
+        // 背压全局后处理钩子
         if (globalBackPressureListener != null) {
             try {
                 globalBackPressureListener.postHandle(name, element, blockInNano);
             } catch (Throwable e) {
-                logger.error("", e);
+                log.error("", e);
             }
         }
-        return true;
-    }
 
-    static void setupGlobalBackPressureListener(GlobalBackPressureListener listener) {
-        globalBackPressureListener = listener;
+        return true;
     }
 }

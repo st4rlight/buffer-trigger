@@ -18,8 +18,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.github.phantomthief.collection.BufferTrigger;
-import com.github.phantomthief.collection.impl.SimpleBufferTrigger;
+import com.github.phantomthief.MoreBufferTrigger;
+import com.github.phantomthief.BufferTrigger;
+import com.github.phantomthief.simple.SimpleBufferTrigger;
 import com.github.phantomthief.util.ThrowableConsumer;
 import com.google.common.util.concurrent.AtomicLongMap;
 
@@ -85,7 +86,7 @@ class ConflictReadWriteTest {
             assertEquals(100, it.get("s2"));
             success[0] = true;
         };
-        BufferTrigger<String> bufferTrigger = BufferTrigger.<String, AtomicLongMap<String>> simple()
+        BufferTrigger<String> bufferTrigger = MoreBufferTrigger.<String, AtomicLongMap<String>> simple()
                                                                                                      .setContainer(AtomicLongMap::create, (c, e) -> {
                     c.incrementAndGet(e);
                     return true;

@@ -1,14 +1,15 @@
 package com.github.phantomthief.collection.impl;
 
+import static com.github.phantomthief.constant.TriggerConstant.DEFAULT_LINGER;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.time.Duration.ofNanos;
-import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -16,13 +17,14 @@ import java.util.function.Supplier;
 
 import javax.annotation.Nonnull;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.BufferTrigger;
+import com.github.phantomthief.enhance.LazyBufferTrigger;
 import com.github.phantomthief.util.ThrowableConsumer;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * {@link BatchConsumeBlockingQueueTrigger}构造器，目前已不推荐直接使用，
- * 请调用{@link BufferTrigger#batchBlocking()}生成构造器实例.
+ * 请调用{@link com.github.phantomthief.MoreBufferTrigger#batchBlocking()}生成构造器实例.
  * <p>
  * 用于标准化{@link BatchConsumeBlockingQueueTrigger}实例生成及配置，提供部分机制的默认实现.
  * @param <E>
@@ -30,14 +32,21 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public final class BatchConsumerTriggerBuilder<E> {
 
-    private static final Duration DEFAULT_LINGER = ofSeconds(1);
-
+    // 定时任务线程池（内部默认单线程, daemon实现）
     ScheduledExecutorService scheduledExecutorService;
+    // 指示是否使用内部的定时任务线程池
     boolean usingInnerExecutor;
+
+    // 类似kakfa的linger
     Supplier<Duration> linger;
+    // 批次大小
     int batchSize;
+    // 容器大小（默认实现最终会与batchSize取最大值）
     int bufferSize;
+
+    // 消费函数
     ThrowableConsumer<List<E>, Exception> consumer;
+    // 异常处理
     BiConsumer<Throwable, List<E>> exceptionHandler;
 
     /**
@@ -170,6 +179,7 @@ public final class BatchConsumerTriggerBuilder<E> {
         });
     }
 
+    // 主要是确保linger和线程池
     private void ensure() {
         checkNotNull(consumer);
 
@@ -182,11 +192,14 @@ public final class BatchConsumerTriggerBuilder<E> {
         }
     }
 
+    /**
+     * 内部默认线程池，单线程，daemon实现
+     */
     private ScheduledExecutorService makeScheduleExecutor() {
-
-        return newScheduledThreadPool(1,
-                new ThreadFactoryBuilder()
-                        .setNameFormat("pool-batch-consume-blocking-queue-thread-%d")
-                        .setDaemon(true).build());
+        ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("pool-batch-consume-blocking-queue-thread-%d")
+                .setDaemon(true)
+                .build();
+        return newScheduledThreadPool(1, threadFactory);
     }
 }

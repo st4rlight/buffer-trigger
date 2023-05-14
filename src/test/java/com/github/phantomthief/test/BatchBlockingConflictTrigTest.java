@@ -15,7 +15,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.MoreBufferTrigger;
+import com.github.phantomthief.BufferTrigger;
 
 /**
  * @author w.vela
@@ -27,7 +28,7 @@ class BatchBlockingConflictTrigTest {
             new LinkedBlockingQueue<>(100), new ThreadPoolExecutor.CallerRunsPolicy());
     private volatile boolean check = true;
     private volatile boolean failed;
-    private final BufferTrigger<Integer> trigger = BufferTrigger.<Integer> batchBlocking()
+    private final BufferTrigger<Integer> trigger = MoreBufferTrigger.<Integer> batchBlocking()
             .batchSize(100)
             .bufferSize(1000)
             .setConsumerEx(this::consumer)

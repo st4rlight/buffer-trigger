@@ -1,6 +1,5 @@
-package com.github.phantomthief.collection.impl;
+package com.github.phantomthief.simple;
 
-import static com.github.phantomthief.collection.impl.SimpleBufferTrigger.TriggerResult.trig;
 import static com.github.phantomthief.util.MoreSuppliers.lazy;
 import static java.lang.System.currentTimeMillis;
 
@@ -16,10 +15,14 @@ import java.util.function.ToIntBiFunction;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 
-import com.github.phantomthief.collection.BufferTrigger;
-import com.github.phantomthief.collection.impl.SimpleBufferTrigger.TriggerResult;
-import com.github.phantomthief.collection.impl.SimpleBufferTrigger.TriggerStrategy;
+import com.github.phantomthief.BufferTrigger;
+import com.github.phantomthief.backpressure.BackPressureListener;
+import com.github.phantomthief.strategy.MultiIntervalTriggerStrategy;
+import com.github.phantomthief.strategy.TriggerResult;
+import com.github.phantomthief.strategy.TriggerStrategy;
 import com.github.phantomthief.util.ThrowableConsumer;
+
+import lombok.AllArgsConstructor;
 
 /**
  * {@link SimpleBufferTrigger}通用构造器
@@ -27,23 +30,17 @@ import com.github.phantomthief.util.ThrowableConsumer;
  * 当对{@link SimpleBufferTrigger}有更多自定义配置时可使用该构造器.
  * <p>
  * 本质上包装了{@link SimpleBufferTriggerBuilder}，屏蔽底层细节.
+ *
+ * 大多数业务场景，请使用{@link com.github.phantomthief.MoreBufferTrigger#simple()}生成构造器实例.
+ *
  * @param <E> 缓存元素类型，标明{@link  SimpleBufferTrigger#enqueue(Object)}传入元素的类型
  * @param <C> 缓存容器类型
  * @author w.vela
  */
+@AllArgsConstructor
 public class GenericSimpleBufferTriggerBuilder<E, C> {
 
     private final SimpleBufferTriggerBuilder<Object, Object> builder;
-
-    /**
-     * 构造方法，接受一个{@link SimpleBufferTriggerBuilder}进行包装.
-     * <p>
-     * 大多数业务场景，请使用{@link BufferTrigger#simple()}生成构造器实例.
-     * @param builder
-     */
-    public GenericSimpleBufferTriggerBuilder(SimpleBufferTriggerBuilder<Object, Object> builder) {
-        this.builder = builder;
-    }
 
     /**
      * 设置缓存提供器及缓存存入函数；<b>注意：</b> 请使用者必须考虑线程安全问题.
@@ -123,6 +120,10 @@ public class GenericSimpleBufferTriggerBuilder<E, C> {
         return this;
     }
 
+    /**
+     * 恒定速率触发
+     * NOTE: 即希望在固定时间内固定触发检测多少次（当然会随着consume的时间而有所偏差，因此会动态调整下一次的触发间隔）
+     */
     @CheckReturnValue
     public GenericSimpleBufferTriggerBuilder<E, C> intervalAtFixedRate(long interval,
             TimeUnit unit) {
@@ -138,7 +139,7 @@ public class GenericSimpleBufferTriggerBuilder<E, C> {
                 long alignTime = time.get();
                 long intervalInMs = unit.toMillis(interval);
                 long result = intervalInMs - (currentTimeMillis() - alignTime) % intervalInMs;
-                return trig(change > 0, result);
+                return TriggerResult.of(change > 0, result);
             }
         });
         return this;

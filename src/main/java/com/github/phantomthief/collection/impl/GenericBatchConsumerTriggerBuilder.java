@@ -9,8 +9,10 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.BufferTrigger;
 import com.github.phantomthief.util.ThrowableConsumer;
+
+import lombok.AllArgsConstructor;
 
 /**
  * {@link BatchConsumeBlockingQueueTrigger}通用构造器.
@@ -20,13 +22,11 @@ import com.github.phantomthief.util.ThrowableConsumer;
  * 本质上包装了{@link BatchConsumerTriggerBuilder}，屏蔽底层细节.
  * @author w.vela
  */
+@AllArgsConstructor
 public class GenericBatchConsumerTriggerBuilder<E> {
 
     private final BatchConsumerTriggerBuilder<Object> builder;
 
-    public GenericBatchConsumerTriggerBuilder(BatchConsumerTriggerBuilder<Object> builder) {
-        this.builder = builder;
-    }
 
     @Deprecated
     public GenericBatchConsumerTriggerBuilder<E> forceConsumeEveryTick() {

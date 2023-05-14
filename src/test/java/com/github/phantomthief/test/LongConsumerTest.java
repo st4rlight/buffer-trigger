@@ -11,8 +11,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
-import com.github.phantomthief.collection.BufferTrigger;
-import com.github.phantomthief.collection.impl.SimpleBufferTrigger;
+import com.github.phantomthief.BufferTrigger;
+import com.github.phantomthief.simple.SimpleBufferTrigger;
 
 /**
  * @author w.vela

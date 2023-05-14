@@ -13,7 +13,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.MoreBufferTrigger;
+import com.github.phantomthief.BufferTrigger;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.Uninterruptibles;
 
@@ -26,7 +27,7 @@ public class SimpleBufferTriggerRejectHandlerTest {
     private AtomicLong consumeCount = new AtomicLong();
     private AtomicLong rejectCount = new AtomicLong();
 
-    private BufferTrigger<String> buffer = BufferTrigger.<String, Queue<String>>simple()
+    private BufferTrigger<String> buffer = MoreBufferTrigger.<String, Queue<String>>simple()
             .name("test-trigger")
             .setContainer(ConcurrentLinkedQueue::new, Queue::add)
             .maxBufferCount(1000)

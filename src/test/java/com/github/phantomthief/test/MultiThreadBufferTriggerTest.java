@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.phantomthief.collection.BufferTrigger;
-import com.github.phantomthief.collection.impl.SimpleBufferTrigger;
+import com.github.phantomthief.BufferTrigger;
+import com.github.phantomthief.simple.SimpleBufferTrigger;
 
 /**
  * @author w.vela

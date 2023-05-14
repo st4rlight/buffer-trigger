@@ -12,7 +12,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.MoreBufferTrigger;
+import com.github.phantomthief.BufferTrigger;
 
 /**
  * @author w.vela
@@ -24,7 +25,7 @@ class TestCloseable {
     void testSimpleClose() {
         AtomicInteger result = new AtomicInteger();
         AtomicInteger consumeCount = new AtomicInteger();
-        BufferTrigger<String> trigger = BufferTrigger.<String, AtomicInteger> simple()
+        BufferTrigger<String> trigger = MoreBufferTrigger.<String, AtomicInteger> simple()
                 .setContainer(AtomicInteger::new, (it, c) -> {
                     it.incrementAndGet();
                     return true;
@@ -59,7 +60,7 @@ class TestCloseable {
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         AtomicInteger result = new AtomicInteger();
         AtomicInteger consumeCount = new AtomicInteger();
-        BufferTrigger<String> trigger = BufferTrigger.<String, AtomicInteger> simple()
+        BufferTrigger<String> trigger = MoreBufferTrigger.<String, AtomicInteger> simple()
                 .setContainerEx(AtomicInteger::new, (it, c) -> {
                     it.incrementAndGet();
                     return 1;
@@ -97,7 +98,7 @@ class TestCloseable {
     void testBlockingClose() {
         AtomicInteger result = new AtomicInteger();
         AtomicInteger consumeCount = new AtomicInteger();
-        BufferTrigger<String> trigger = BufferTrigger.<String> batchBlocking()
+        BufferTrigger<String> trigger = MoreBufferTrigger.<String> batchBlocking()
                 .linger(1, SECONDS)
                 .batchSize(10)
                 .setConsumer(it -> {
@@ -130,7 +131,7 @@ class TestCloseable {
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         AtomicInteger result = new AtomicInteger();
         AtomicInteger consumeCount = new AtomicInteger();
-        BufferTrigger<String> trigger = BufferTrigger.<String> batchBlocking()
+        BufferTrigger<String> trigger = MoreBufferTrigger.<String> batchBlocking()
                 .linger(1, SECONDS)
                 .batchSize(10)
                 .setScheduleExecutorService(executor)

@@ -12,7 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.phantomthief.collection.BufferTrigger;
+import com.github.phantomthief.MoreBufferTrigger;
+import com.github.phantomthief.BufferTrigger;
 
 /**
  * @author w.vela
@@ -24,7 +25,7 @@ class BatchBlockingConflictTrigTest2 {
             .getLogger(BatchBlockingConflictTrigTest2.class);
     private volatile boolean check = true;
     private volatile boolean failed;
-    private final BufferTrigger<Integer> trigger = BufferTrigger.<Integer> batchBlocking()
+    private final BufferTrigger<Integer> trigger = MoreBufferTrigger.<Integer> batchBlocking()
             .batchSize(100)
             .bufferSize(1000)
             .setConsumerEx(this::consumer)
